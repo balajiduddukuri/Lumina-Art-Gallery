@@ -1,0 +1,5 @@
+{
+  "name": "Lumina Art Gallery",
+  "description": "An infinite generative art gallery that creates poetic prompts and renders unique abstract visualizations in real-time using local algorithms.",
+  "requestFramePermissions": []
+}
