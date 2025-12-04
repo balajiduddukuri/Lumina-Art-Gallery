@@ -5,12 +5,7 @@ import ArtCard from './components/ArtCard';
 import GenerativeCanvas from './components/GenerativeCanvas';
 import { downloadHighRes, shareArt } from './utils/actions';
 import { Play, Pause, RefreshCw, X, Sparkles, Palette, Download, Share2, Heart, Loader2, Home, Info, Grid } from 'lucide-react';
-import { app_themes } from './constants';
-
-const AUTO_GENERATE_INTERVAL = 4000; // 4 seconds
-const STORAGE_KEY = 'lumina_favorites';
-const INITIAL_BATCH_SIZE = 12;
-const SCROLL_BATCH_SIZE = 4;
+import { app_themes, AUTO_GENERATE_INTERVAL, STORAGE_KEY, INITIAL_BATCH_SIZE, SCROLL_BATCH_SIZE } from './constants';
 
 type ViewMode = 'home' | 'gallery' | 'favorites' | 'about';
 
@@ -250,7 +245,7 @@ const App: React.FC = () => {
           <span className="text-rose-400"> Cubism</span>, the engine reinterprets classic art movements through a digital lens.
         </p>
         <div className="flex flex-wrap gap-2">
-          {['Impressionism', 'Baroque', 'Surrealism', 'Cyberpunk', 'Art Nouveau', 'Futurism'].map(tag => (
+          {['Impressionism', 'Baroque', 'Surrealism', 'Cyberpunk', 'Art Nouveau', 'Futurism', 'Cosmic Futurism'].map(tag => (
             <span key={tag} className="px-3 py-1 bg-slate-800 text-slate-400 text-sm rounded-full border border-slate-700">
               {tag}
             </span>
@@ -427,15 +422,15 @@ const App: React.FC = () => {
               {/* Info Side */}
               <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col overflow-y-auto bg-slate-900">
                  <div className="flex justify-between items-start mb-6">
-                    <div>
-                      <h2 className="text-2xl md:text-3xl font-bold serif text-white mb-2 leading-tight">{selectedPiece.title}</h2>
+                    <div className="flex-1 min-w-0 mr-4">
+                      <h2 className="text-2xl md:text-3xl font-bold serif text-white mb-2 leading-tight break-words">{selectedPiece.title}</h2>
                       <div className="flex flex-wrap gap-2">
                         <span className="px-2 py-1 rounded-md bg-slate-800 text-xs text-slate-400 uppercase tracking-wider font-semibold border border-slate-700 text-cyan-400">{selectedPiece.attributes.movement}</span>
                         <span className="px-2 py-1 rounded-md bg-slate-800 text-xs text-slate-400 uppercase tracking-wider font-semibold border border-slate-700">{selectedPiece.attributes.style}</span>
                         <span className="px-2 py-1 rounded-md bg-slate-800 text-xs text-slate-400 uppercase tracking-wider font-semibold border border-slate-700">{selectedPiece.attributes.colorName}</span>
                       </div>
                     </div>
-                    <button onClick={() => setSelectedPiece(null)} className="p-2 hover:bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors" aria-label="Close details">
+                    <button onClick={() => setSelectedPiece(null)} className="p-2 hover:bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors flex-shrink-0" aria-label="Close details">
                       <X size={24} />
                     </button>
                  </div>

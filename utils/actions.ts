@@ -1,14 +1,15 @@
 import { ArtPiece } from '../types';
 import { drawGenerativeArt } from './renderEngine';
+import { DOWNLOAD_RESOLUTION, SHARE_RESOLUTION } from '../constants';
 
 export const downloadHighRes = (piece: ArtPiece) => {
   const canvas = document.createElement('canvas');
-  canvas.width = 2048;
-  canvas.height = 2048;
+  canvas.width = DOWNLOAD_RESOLUTION;
+  canvas.height = DOWNLOAD_RESOLUTION;
   const ctx = canvas.getContext('2d');
   
   if (ctx) {
-    drawGenerativeArt(ctx, piece.attributes, piece.seed, 2048, 2048);
+    drawGenerativeArt(ctx, piece.attributes, piece.seed, DOWNLOAD_RESOLUTION, DOWNLOAD_RESOLUTION);
     const link = document.createElement('a');
     link.download = `Lumina_${piece.title.replace(/\s+/g, '_')}_HighRes.png`;
     link.href = canvas.toDataURL('image/png');
@@ -18,12 +19,12 @@ export const downloadHighRes = (piece: ArtPiece) => {
 
 export const shareArt = (piece: ArtPiece) => {
   const canvas = document.createElement('canvas');
-  canvas.width = 1080;
-  canvas.height = 1080;
+  canvas.width = SHARE_RESOLUTION;
+  canvas.height = SHARE_RESOLUTION;
   const ctx = canvas.getContext('2d');
 
   if (ctx) {
-    drawGenerativeArt(ctx, piece.attributes, piece.seed, 1080, 1080);
+    drawGenerativeArt(ctx, piece.attributes, piece.seed, SHARE_RESOLUTION, SHARE_RESOLUTION);
     
     canvas.toBlob(async (blob) => {
       if (!blob) return;

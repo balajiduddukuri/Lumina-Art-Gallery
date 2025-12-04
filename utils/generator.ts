@@ -1,7 +1,8 @@
+
 import {
   geo_fragments, starry_fragments, kiss_fragments, symbolisms, artist_mashups,
   color_palette_keys, styles, historical_movements, textures, layouts, perspectives, lighting,
-  moods, adjectives, intensity_words, endings
+  moods, adjectives, intensity_words, endings, realistic_subjects, splash_styles
 } from '../constants';
 import { ArtAttributes, ArtPiece } from '../types';
 
@@ -25,7 +26,7 @@ function capitalize(s: string) {
 }
 
 export const generateArtPiece = (): ArtPiece => {
-  // Random count 1-3, matching the Python script's logic
+  // Random count 1-3
   const geo = pick(geo_fragments, Math.floor(Math.random() * 3) + 1);
   const starry = pick(starry_fragments, Math.floor(Math.random() * 3) + 1);
   const kiss = pick(kiss_fragments, Math.floor(Math.random() * 3) + 1);
@@ -33,6 +34,8 @@ export const generateArtPiece = (): ArtPiece => {
   const colorName = color_palette_keys[Math.floor(Math.random() * color_palette_keys.length)];
   const style = styles[Math.floor(Math.random() * styles.length)];
   const movement = historical_movements[Math.floor(Math.random() * historical_movements.length)];
+  const subject = realistic_subjects[Math.floor(Math.random() * realistic_subjects.length)];
+  const splash = splash_styles[Math.floor(Math.random() * splash_styles.length)];
   const mood = moods[Math.floor(Math.random() * moods.length)];
   const texture = textures[Math.floor(Math.random() * textures.length)];
   const layout = layouts[Math.floor(Math.random() * layouts.length)];
@@ -51,22 +54,22 @@ export const generateArtPiece = (): ArtPiece => {
 
   if (structIndex === 0) {
     const verb = pick(['blending', 'merging', 'interweaving', 'harmonizing'], 1);
-    finalPrompt = `A ${mood} ${style} interpreting ${movement} on a ${layout}, ${intensity} crafted with ${texture} and ${lightingChoice}, ${verb} ${geo} with ${starry} and ${kiss}, colored in ${colorName}, ${symbol} — ${ending}`;
+    finalPrompt = `A ${mood} ${style} interpreting ${movement} on a ${layout}, featuring ${subject} accented with ${splash}, ${intensity} crafted with ${texture} and ${lightingChoice}, ${verb} ${geo} with ${starry} and ${kiss}, colored in ${colorName}, ${symbol} — ${ending}`;
   } else if (structIndex === 1) {
-    finalPrompt = `${capitalize(intensity)} shaped in ${style} reflecting ${movement} and framed through a ${perspectiveChoice}, this ${adj} artwork combines ${geo}, ${starry}, and ${kiss}, enriched by ${texture}, using a palette of ${colorName}. ${symbol}. ${ending}`;
+    finalPrompt = `${capitalize(intensity)} shaped in ${style} reflecting ${movement} and framed through a ${perspectiveChoice}, this ${adj} artwork depicts ${subject} layered with ${splash} and combined with ${geo}, ${starry}, and ${kiss}, enriched by ${texture}, using a palette of ${colorName}. ${symbol}. ${ending}`;
   } else {
     const verb = pick(['fuses', 'entangles', 'layers'], 1);
-    finalPrompt = `In a ${layout} echoing ${movement} and illuminated by ${lightingChoice}, the piece ${verb} ${geo}, ${starry}, and ${kiss} with ${texture} strokes of ${colorName}. Inspired by ${artist}, it ${symbol} ${ending}`;
+    finalPrompt = `In a ${layout} echoing ${movement} and illuminated by ${lightingChoice}, the piece presents ${subject} and ${splash} which ${verb} ${geo}, ${starry}, and ${kiss} with ${texture} strokes of ${colorName}. Inspired by ${artist}, it ${symbol} ${ending}`;
   }
 
   const attributes: ArtAttributes = {
-    geo, starry, kiss, colorName, style, movement, mood, texture, layout,
+    geo, starry, kiss, colorName, style, movement, subject, splash, mood, texture, layout,
     symbol, artist, lighting: lightingChoice, perspective: perspectiveChoice,
     adj, intensity, ending
   };
 
   const titles = [
-    `${capitalize(mood)} ${capitalize(movement)}`,
+    `${capitalize(mood)} ${capitalize(subject.split(' ').pop() || 'Scene')}`,
     `${capitalize(style)} of ${capitalize(movement.split(' ').pop() || 'Art')}`,
     `The ${capitalize(adj)} Composition`,
     `${capitalize(artist)} Reflection`,

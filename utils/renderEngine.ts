@@ -1,3 +1,4 @@
+
 import { ArtAttributes } from '../types';
 import { PALETTES } from '../constants';
 
@@ -54,13 +55,13 @@ export const drawGenerativeArt = (
     const isCalm = moodLower.includes('calm') || moodLower.includes('meditative');
     const isBold = moodLower.includes('bold') || moodLower.includes('energetic') || moodLower.includes('vibrant');
     
-    // Intensity Logic: "Softly" vs "Fiercely" affects opacity and saturation logic
+    // Intensity Logic
     const isSoft = intensityLower.match(/soft|quiet|subtl|delicate|tender|wistful|dream/);
     const isIntense = intensityLower.match(/bold|deep|vibrant|fierce|wild|power|dramatic/);
 
     let globalAlphaMod = 1.0;
-    if (isSoft) globalAlphaMod = 0.7;
-    if (isIntense) globalAlphaMod = 1.0; // Keep full opacity but maybe increase line weight
+    if (isSoft) globalAlphaMod = 0.85; // Increased minimum visibility
+    if (isIntense) globalAlphaMod = 1.0;
 
     const densityMod = (isCalm ? 0.6 : (isBold ? 1.5 : 1.0));
     const lineMod = (isBold || isIntense ? 1.5 : 1.0) * (isSoft ? 0.8 : 1.0);
@@ -68,7 +69,6 @@ export const drawGenerativeArt = (
     // --- Helpers ---
     const getColor = (alpha: number = 1.0) => {
         const c = rng.choice(palette.colors);
-        // Apply global alpha modifier
         const finalAlpha = alpha * globalAlphaMod;
         
         if(c.startsWith('#') && c.length === 7) {
@@ -127,15 +127,6 @@ export const drawGenerativeArt = (
                 ctx.stroke();
             }
         }
-        else if (style.includes('digital') || style.includes('cyber') || style.includes('glitch') || style.includes('vector')) {
-            const count = rng.range(30, 80) * densityMod;
-            for(let i=0; i<count; i++) {
-                ctx.fillStyle = getColor(rng.range(0.1, 0.4));
-                const bw = rng.range(10, 300)*scale;
-                const bh = rng.range(2, 40)*scale;
-                ctx.fillRect(rng.range(-50, w), rng.range(-50, h), bw, bh);
-            }
-        }
         else {
              // Generic atmospheric background
              const grad = ctx.createLinearGradient(0, 0, w, h);
@@ -143,24 +134,240 @@ export const drawGenerativeArt = (
              grad.addColorStop(1, getColor(0.2));
              ctx.fillStyle = grad;
              ctx.fillRect(0,0,w,h);
-             for(let k=0; k<5; k++) {
-                 ctx.fillStyle = getColor(0.05);
-                 ctx.beginPath();
-                 ctx.arc(rng.range(0,w), rng.range(0,h), rng.range(100,400)*scale, 0, Math.PI*2);
-                 ctx.fill();
-             }
         }
     };
 
-    // --- 3. Perspective Transformation ---
-    // Sets up the matrix for the Geometric layer
+    // --- 3. Scenery Layer (Realistic Subjects) ---
+    const drawSceneryLayer = () => {
+        const subj = attributes.subject ? attributes.subject.toLowerCase() : "";
+        ctx.save();
+        ctx.globalCompositeOperation = 'source-over'; // Ensure opacity
+        
+        // Use higher base alphas to ensure visibility
+        
+        if (subj.includes('mountain')) {
+            // Layered mountains
+            const layers = 3;
+            for(let i=0; i<layers; i++) {
+                // Background mountains are lighter/faded, foreground darker/richer
+                ctx.fillStyle = getColor(0.7 + (i*0.1)); 
+                ctx.beginPath();
+                const baseY = h * (0.4 + (i*0.2));
+                ctx.moveTo(0, h);
+                ctx.lineTo(0, baseY);
+                
+                let x = 0;
+                while(x <= w) {
+                    x += rng.range(30, 120)*scale;
+                    // Jagged peaks
+                    const peakH = rng.range(50, 150) * scale * (1 + i*0.5); 
+                    ctx.lineTo(x - rng.range(10,30)*scale, baseY - peakH);
+                    ctx.lineTo(x, baseY + rng.range(-20, 20)*scale);
+                }
+                ctx.lineTo(w, h);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Add some snow/highlight cap
+                if (i === 0 && rng.bool(0.7)) {
+                    ctx.strokeStyle = "rgba(255,255,255,0.4)";
+                    ctx.lineWidth = 2 * scale;
+                    ctx.stroke();
+                }
+            }
+        }
+        else if (subj.includes('city') || subj.includes('skyline')) {
+            // Skyscrapers
+            const layers = 2;
+            for(let l=0; l<layers; l++) {
+                 ctx.fillStyle = getColor(0.6 + l*0.2);
+                 let x = 0;
+                 const baseY = h;
+                 // denser back layer
+                 while(x < w) {
+                    const bw = rng.range(40, 100)*scale * (l === 0 ? 0.8 : 1.2);
+                    const bh = rng.range(100, h*(0.5 + l*0.2))*scale;
+                    
+                    // Building body
+                    ctx.fillRect(x, baseY - bh, bw, bh);
+                    
+                    // Windows / Details
+                    if (l === 1) { // foreground details
+                        ctx.fillStyle = rng.bool(0.3) ? "#FFFFE0" : "rgba(255,255,255,0.1)";
+                        const floors = rng.range(5, 20);
+                        for(let f=0; f<floors; f++) {
+                            if (rng.bool(0.6)) {
+                                const wx = x + 5*scale;
+                                const wy = baseY - bh + (f*15*scale) + 10*scale;
+                                if (wy < baseY) ctx.fillRect(wx, wy, bw - 10*scale, 6*scale);
+                            }
+                        }
+                        ctx.fillStyle = getColor(0.8); // Reset
+                    }
+                    
+                    x += bw + rng.range(-5, 2)*scale;
+                }
+            }
+        }
+        else if (subj.includes('forest') || subj.includes('tree')) {
+             // Dense Trees
+             const layers = 4;
+             for(let l=0; l<layers; l++) {
+                 const treeCount = 15 * densityMod;
+                 const baseY = h * (0.6 + l*0.1);
+                 
+                 for(let i=0; i<treeCount; i++) {
+                     const x = rng.range(0, w);
+                     const th = rng.range(80, 250)*scale * (0.8 + l*0.3);
+                     const tw = th * 0.35;
+                     
+                     ctx.fillStyle = getColor(0.5 + l*0.15);
+                     ctx.beginPath();
+                     ctx.moveTo(x, baseY);
+                     ctx.lineTo(x - tw/2, baseY - th);
+                     ctx.lineTo(x + tw/2, baseY);
+                     ctx.fill();
+                 }
+             }
+        }
+        else if (subj.includes('ocean') || subj.includes('horizon')) {
+            // Horizon line + Gradient
+            const grad = ctx.createLinearGradient(0, h*0.6, 0, h);
+            grad.addColorStop(0, getColor(0.9));
+            grad.addColorStop(1, palette.background);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, h*0.6, w, h*0.4);
+            
+            // Waves/Reflections
+            ctx.strokeStyle = "rgba(255,255,255,0.3)";
+            ctx.lineWidth = 2*scale;
+            for(let i=0; i<40; i++) {
+                const y = rng.range(h*0.6, h);
+                const len = rng.range(20, 150)*scale;
+                const x = rng.range(0, w);
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x+len, y);
+                ctx.stroke();
+            }
+        }
+        else if (subj.includes('desert') || subj.includes('dune')) {
+            // Bezier dunes
+            for(let i=0; i<5; i++) {
+                 ctx.fillStyle = getColor(0.4 + (i*0.15));
+                 ctx.beginPath();
+                 const startY = h * (0.4 + i*0.12);
+                 ctx.moveTo(0, h);
+                 ctx.lineTo(0, startY);
+                 ctx.bezierCurveTo(w*0.4, startY - 50*scale, w*0.6, startY + 50*scale, w, startY - 20*scale);
+                 ctx.lineTo(w, h);
+                 ctx.closePath();
+                 ctx.fill();
+            }
+        }
+        else if (subj.includes('island') || subj.includes('floating')) {
+            // Floating Islands
+            const count = rng.range(3, 7);
+            for(let i=0; i<count; i++) {
+                ctx.fillStyle = getColor(0.6);
+                const cx = rng.range(w*0.1, w*0.9);
+                const cy = rng.range(h*0.1, h*0.5);
+                const rx = rng.range(40, 120)*scale;
+                const ry = rng.range(15, 40)*scale;
+                
+                // Top surface
+                ctx.beginPath();
+                ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI*2);
+                ctx.fill();
+                
+                // Rocky bottom
+                ctx.fillStyle = getColor(0.4);
+                ctx.beginPath();
+                ctx.moveTo(cx - rx, cy);
+                // Jagged bottom
+                let x = cx - rx;
+                while(x < cx + rx) {
+                    x += 10*scale;
+                    ctx.lineTo(x, cy + rng.range(10, ry*3));
+                }
+                ctx.lineTo(cx + rx, cy);
+                ctx.fill();
+            }
+        }
+        else if (subj.includes('temple') || subj.includes('ruin')) {
+            // Pillars
+            const count = rng.range(4, 10);
+            ctx.fillStyle = getColor(0.7);
+            const horizon = h * 0.7;
+            
+            for(let i=0; i<count; i++) {
+                const pw = rng.range(20, 50)*scale;
+                const ph = rng.range(100, 300)*scale;
+                const px = rng.range(w*0.1, w*0.9);
+                
+                // Column
+                ctx.fillRect(px, horizon - ph, pw, ph);
+                // Base
+                ctx.fillRect(px - 5*scale, horizon, pw + 10*scale, 10*scale);
+                // Top Capital
+                ctx.fillRect(px - 5*scale, horizon - ph, pw + 10*scale, 20*scale);
+                
+                // Broken parts?
+                if (rng.bool(0.3)) {
+                     ctx.clearRect(px, horizon - ph + rng.range(10, 50), pw, rng.range(5, 20));
+                }
+            }
+             // Ground
+            ctx.fillRect(0, horizon, w, h-horizon);
+        }
+        else if (subj.includes('planet') || subj.includes('cosmic') || subj.includes('colony')) {
+            // Horizon curve
+            ctx.fillStyle = getColor(0.5);
+            ctx.beginPath();
+            ctx.arc(w/2, h*2.5, h*2, Math.PI, 0); // Big curve at bottom
+            ctx.fill();
+            
+            // Craters or Domes
+            if (subj.includes('colony')) {
+                 const domes = 5;
+                 for(let i=0; i<domes; i++) {
+                     const dx = rng.range(w*0.2, w*0.8);
+                     const dy = h * 0.8 + rng.range(-20, 20)*scale;
+                     const dr = rng.range(30, 80)*scale;
+                     ctx.fillStyle = "rgba(200, 255, 255, 0.3)";
+                     ctx.strokeStyle = "white";
+                     ctx.beginPath();
+                     ctx.arc(dx, dy, dr, Math.PI, 0); // Semi-circle dome
+                     ctx.fill();
+                     ctx.stroke();
+                 }
+            } else {
+                 // Craters
+                 for(let i=0; i<10; i++) {
+                     const cx = rng.range(0, w);
+                     const cy = rng.range(h*0.6, h);
+                     const rx = rng.range(20, 60)*scale;
+                     const ry = rx * 0.3;
+                     ctx.strokeStyle = getColor(0.6);
+                     ctx.lineWidth = 2;
+                     ctx.beginPath();
+                     ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI*2);
+                     ctx.stroke();
+                 }
+            }
+        }
+        
+        ctx.restore();
+    };
+
+    // --- 4. Perspective Transformation ---
     const applyPerspective = () => {
         const pText = attributes.perspective.toLowerCase();
         
         if (pText.includes('tilted') || pText.includes('dynamic')) {
             ctx.translate(w/2, h/2);
             ctx.rotate(rng.range(-0.2, 0.2));
-            ctx.scale(1.1, 1.1); // Zoom in to cover edges
+            ctx.scale(1.1, 1.1); 
             ctx.translate(-w/2, -h/2);
         }
         else if (pText.includes('macro') || pText.includes('close-up')) {
@@ -168,12 +375,9 @@ export const drawGenerativeArt = (
             ctx.scale(1.5, 1.5);
             ctx.translate(-w/2, -h/2);
         }
-        else if (pText.includes('overhead')) {
-            // No rotation, just slight flattening if we were 3D, but here 2D
-        }
     };
 
-    // --- 4. Drawing Primitives (Geo) ---
+    // --- 5. Drawing Primitives (Geo) ---
     const drawGrid = () => {
         const isCurved = rng.bool(0.4); 
         const step = rng.range(30, 100) * scale;
@@ -194,7 +398,6 @@ export const drawGenerativeArt = (
         } else {
             const vanishX = rng.range(0, w);
             const vanishY = rng.range(0, h);
-            // Perspective attribute influences this choice
             const pText = attributes.perspective.toLowerCase();
             let type = rng.choice(['perspective', 'ortho', 'radial']);
             if (pText.includes('wide')) type = 'perspective';
@@ -213,10 +416,6 @@ export const drawGenerativeArt = (
                      ctx.moveTo(cx, cy);
                      const ang = (Math.PI*2/count)*i;
                      ctx.lineTo(cx + Math.cos(ang)*w, cy + Math.sin(ang)*w);
-                 }
-                 for(let r=step; r<w; r+=step) {
-                     ctx.moveTo(cx + r, cy);
-                     ctx.arc(cx, cy, r, 0, Math.PI*2);
                  }
             } else {
                  ctx.save();
@@ -398,7 +597,116 @@ export const drawGenerativeArt = (
         }
     };
 
-    // --- 5. Layer Groups ---
+    // --- 6. Color Splash Layer (New) ---
+    const drawColorSplash = () => {
+        const type = attributes.splash ? attributes.splash.toLowerCase() : "";
+        if (!type || type === 'none') return;
+
+        ctx.save();
+        
+        if (type.includes('ink')) {
+            // Ink Drops: Concentric organic blobs
+            const drops = rng.range(3, 8);
+            for(let i=0; i<drops; i++) {
+                const cx = rng.range(w*0.1, w*0.9);
+                const cy = rng.range(h*0.1, h*0.9);
+                const maxR = rng.range(50, 150) * scale;
+                const color = getColor(0.6);
+                
+                ctx.fillStyle = color;
+                // Draw multiple layers of the blob for depth
+                for(let j=0; j<3; j++) {
+                    ctx.beginPath();
+                    const r = maxR * (1 - j*0.2);
+                    for(let a=0; a<=Math.PI*2; a+=0.2) {
+                        const nr = r + rng.range(-10, 10)*scale;
+                        ctx.lineTo(cx + Math.cos(a)*nr, cy + Math.sin(a)*nr);
+                    }
+                    ctx.globalAlpha = 0.4 + j*0.1; 
+                    ctx.fill();
+                }
+            }
+        }
+        else if (type.includes('splatter') || type.includes('paint')) {
+            // Paint Splatters: Central blob + droplets
+            const splatters = rng.range(5, 12);
+            for(let i=0; i<splatters; i++) {
+                const cx = rng.range(0, w);
+                const cy = rng.range(0, h);
+                const size = rng.range(10, 40) * scale;
+                ctx.fillStyle = getColor(0.9);
+                
+                // Main blob
+                ctx.beginPath();
+                ctx.arc(cx, cy, size, 0, Math.PI*2);
+                ctx.fill();
+                
+                // Droplets
+                const drops = rng.range(5, 15);
+                for(let j=0; j<drops; j++) {
+                    const ang = rng.range(0, Math.PI*2);
+                    const dist = size + rng.range(5, 50)*scale;
+                    const dSize = rng.range(1, 5)*scale;
+                    ctx.beginPath();
+                    ctx.arc(cx + Math.cos(ang)*dist, cy + Math.sin(ang)*dist, dSize, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            }
+        }
+        else if (type.includes('neon') || type.includes('burst')) {
+            // Neon Bursts: Radial Gradients
+            ctx.globalCompositeOperation = 'screen';
+            const bursts = rng.range(3, 7);
+            for(let i=0; i<bursts; i++) {
+                const cx = rng.range(0, w);
+                const cy = rng.range(0, h);
+                const r = rng.range(50, 200) * scale;
+                const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+                const c = getColor(1);
+                grad.addColorStop(0, c);
+                grad.addColorStop(1, "rgba(0,0,0,0)");
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI*2);
+                ctx.fill();
+            }
+            ctx.globalCompositeOperation = 'source-over';
+        }
+        else if (type.includes('watercolor') || type.includes('bleed')) {
+             // Watercolor: Large soft asymmetrical shapes
+             ctx.globalCompositeOperation = 'multiply';
+             const patches = rng.range(4, 10);
+             for(let i=0; i<patches; i++) {
+                 const cx = rng.range(0, w);
+                 const cy = rng.range(0, h);
+                 ctx.fillStyle = getColor(0.3);
+                 ctx.beginPath();
+                 const r = rng.range(100, 300)*scale;
+                 for(let a=0; a<=Math.PI*2; a+=0.5) {
+                     const nr = r + rng.range(-40, 40)*scale;
+                     ctx.lineTo(cx + Math.cos(a)*nr, cy + Math.sin(a)*nr);
+                 }
+                 ctx.fill();
+             }
+             ctx.globalCompositeOperation = 'source-over';
+        }
+        else if (type.includes('glitch') || type.includes('scatter')) {
+            // Digital Glitch: Rectangular strips
+            const strips = rng.range(20, 50);
+            for(let i=0; i<strips; i++) {
+                const x = rng.range(0, w);
+                const y = rng.range(0, h);
+                const rw = rng.range(10, 100)*scale;
+                const rh = rng.range(2, 10)*scale;
+                ctx.fillStyle = getColor(0.8);
+                ctx.fillRect(x, y, rw, rh);
+            }
+        }
+        
+        ctx.restore();
+    };
+
+    // --- 7. Layer Groups ---
     const renderGeoLayer = () => {
         const geoText = attributes.geo.toLowerCase();
         let methods = [];
@@ -562,7 +870,7 @@ export const drawGenerativeArt = (
         }
     };
 
-    // --- 6. Symbolism Layer ---
+    // --- 8. Symbolism Layer ---
     const drawSymbolism = () => {
         const sym = attributes.symbol.toLowerCase();
         
@@ -570,7 +878,6 @@ export const drawGenerativeArt = (
         ctx.lineWidth = 1 * scale;
 
         if (sym.includes('unity') || sym.includes('connection') || sym.includes('bond') || sym.includes('mesh')) {
-            // Interconnected circles or lines
             const cx = w/2, cy = h/2;
             for(let i=0; i<5; i++) {
                 ctx.beginPath();
@@ -579,7 +886,6 @@ export const drawGenerativeArt = (
             }
         }
         else if (sym.includes('cycle') || sym.includes('spiral') || sym.includes('rebirth')) {
-            // Large spiral overlay
             ctx.beginPath();
             const cx = w/2, cy = h/2;
             let r = 0;
@@ -594,7 +900,6 @@ export const drawGenerativeArt = (
             ctx.globalAlpha = 1.0;
         }
         else if (sym.includes('growth') || sym.includes('tree') || sym.includes('life') || sym.includes('brain')) {
-             // Upward flowing lines
              ctx.globalAlpha = 0.4 * globalAlphaMod;
              for(let i=0; i<10; i++) {
                  const x = rng.range(w*0.2, w*0.8);
@@ -607,12 +912,11 @@ export const drawGenerativeArt = (
         }
     };
 
-    // --- 7. Artist Influence ---
+    // --- 9. Artist Influence ---
     const drawArtistDetails = () => {
         const artist = attributes.artist.toLowerCase();
         
         if (artist.includes('pollock')) {
-            // Splatters
             const splats = rng.range(20, 50);
             for(let i=0; i<splats; i++) {
                 const cx = rng.range(0, w);
@@ -621,7 +925,6 @@ export const drawGenerativeArt = (
                 ctx.beginPath();
                 ctx.arc(cx, cy, rng.range(2, 10)*scale, 0, Math.PI*2);
                 ctx.fill();
-                // Drips
                 if (rng.bool(0.3)) {
                     ctx.beginPath();
                     ctx.moveTo(cx, cy);
@@ -631,7 +934,6 @@ export const drawGenerativeArt = (
             }
         }
         else if (artist.includes('matisse') || artist.includes('cutout')) {
-            // Organic shapes
             const shapes = 5;
             for(let i=0; i<shapes; i++) {
                 ctx.fillStyle = getColor(0.8);
@@ -647,7 +949,7 @@ export const drawGenerativeArt = (
         }
     };
 
-    // --- 8. Lighting FX ---
+    // --- 10. Lighting FX ---
     const drawLightingFX = () => {
         const lit = attributes.lighting.toLowerCase();
         ctx.globalCompositeOperation = 'overlay';
@@ -724,12 +1026,11 @@ export const drawGenerativeArt = (
         }
     };
     
-    // --- 9. Movement Specific FX ---
+    // --- 11. Movement Specific FX ---
     const applyMovementInfluence = () => {
         const mov = attributes.movement.toLowerCase();
         
         if (mov.includes('pop art')) {
-            // Halftone overlay
             ctx.save();
             ctx.globalCompositeOperation = 'overlay';
             ctx.fillStyle = "rgba(0,0,0,0.2)";
@@ -743,7 +1044,6 @@ export const drawGenerativeArt = (
             ctx.restore();
         }
         else if (mov.includes('ancient') || mov.includes('greek')) {
-            // Marble/Stone tint
             ctx.save();
             ctx.globalCompositeOperation = 'multiply';
             ctx.fillStyle = "rgba(100, 90, 80, 0.1)"; 
@@ -751,7 +1051,6 @@ export const drawGenerativeArt = (
             ctx.restore();
         }
         else if (mov.includes('asian') || mov.includes('ink')) {
-            // Vertical flow bias
              ctx.save();
              ctx.globalCompositeOperation = 'soft-light';
              const grad = ctx.createLinearGradient(0,0,0,h);
@@ -762,7 +1061,6 @@ export const drawGenerativeArt = (
              ctx.restore();
         }
         else if (mov.includes('futurism') || mov.includes('cubism')) {
-             // Angular shards
              ctx.save();
              ctx.globalCompositeOperation = 'screen';
              ctx.strokeStyle = "rgba(255,255,255,0.2)";
@@ -776,13 +1074,11 @@ export const drawGenerativeArt = (
              ctx.restore();
         }
         else if (mov.includes('cosmic futurism')) {
-            // Laser Link Network Overlay
             ctx.save();
             ctx.globalCompositeOperation = 'screen';
             ctx.strokeStyle = "rgba(0, 255, 255, 0.3)"; 
             ctx.lineWidth = 0.5 * scale;
             
-            // Draw a constellation-like network
             const nodes = [];
             const count = 15;
             for(let i=0; i<count; i++) {
@@ -801,7 +1097,6 @@ export const drawGenerativeArt = (
             }
             ctx.stroke();
 
-            // Draw glowing nodes
             ctx.fillStyle = "#00FFFF";
             for(const n of nodes) {
                 ctx.beginPath();
@@ -847,14 +1142,28 @@ export const drawGenerativeArt = (
         ctx.clip();
     }
 
+    // Always draw background first
     drawBackgroundStyle();
-    renderGeoLayer(); // Uses ApplyPerspective internally
-    drawSymbolism();  
-    renderStarryLayer();
-    renderKissLayer();
-    drawArtistDetails(); 
+
+    // Define the core visual layers
+    // Note: drawSceneryLayer is usually background-ish, but shuffling it creates "mixed media" collage effects
+    const visualLayers = [
+        drawSceneryLayer,
+        renderGeoLayer,
+        drawSymbolism,
+        renderStarryLayer,
+        renderKissLayer,
+        drawArtistDetails,
+        drawColorSplash // Added the new Splash layer here
+    ];
+
+    // Shuffle and execute core layers
+    const shuffledLayers = rng.shuffle(visualLayers);
+    shuffledLayers.forEach(layer => layer());
+
+    // Apply Overlays (Lighting, Movement, Texture) last
     drawLightingFX();    
-    applyMovementInfluence(); // Apply theme specific visual overrides
+    applyMovementInfluence(); 
     drawTexture();
 
     ctx.restore(); 

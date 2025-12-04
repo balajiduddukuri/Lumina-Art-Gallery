@@ -1,3 +1,4 @@
+
 import { ColorPalette } from "./types";
 
 export const geo_fragments = [
@@ -19,6 +20,18 @@ export const starry_fragments = [
 export const kiss_fragments = [
 "amber-tinted ornamental swirls", "baroque golden filigree", "luminescent mosaic flourishes", "opalescent metallic motifs", "embellished gilded layers", "radiant ornamental tessellations", "floral gold leaf arabesques", "lustrous Art Deco geometry", "gilded spiral mosaics", "romantic ornamental patterns", "ethereal golden symmetries", "burnished decorative spirals", "vintage ornamental radiance", "rococo-inspired gold accents", "celestial mosaic embellishments", "glimmering ornamental waves", "precious metal latticeworks", "shimmered emotional glyphs", "decorative cosmic gold maps", "sunlit ornamental abstractions", "mythic gilded silhouettes", "cubist gold-foil designs", "ornamental halo motifs", "celestial love ornamentation", "encrusted ornamental geometry", "divine golden mosaics", "iridescent spiritual ornaments", "sacred metallic spirals", "ornate cosmic radiance", "luminous passion mosaics", "symbolic golden circuitry", "delicate ornamental glow", "infinite gilded romance", "radiating metallic tapestries", "abstract ornamental opulence", "luminescent heart geometry", "gold-veined poetic patterns", "elegant gilded resonance", "ceremonial decorative spirals", "dreamlike ornamental textures", "emotional mosaic harmony", "spiraling gold-leaf lattices", "ornamental aura mosaics", "sacred gilded harmony", "celestial ornamental fractals", "romantic chromatic gold flow", "iridescent aura symbols", "golden artistic devotion", "ornamental light mosaics", "empathic gilded forms",
 "human-robot symbiotic motifs", "symbols of post-labor abundance", "entrepreneurial sparks", "delayed gratification geometries", "silicon-biological fusion patterns", "marshmallow test metaphors", "work-as-hobby leisure scenes"
+];
+
+export const realistic_subjects = [
+  "majestic mountain peaks", "cyberpunk city skyline", "misty evergreen forest", 
+  "vast desert dunes", "calm ocean horizon", "cosmic planet surface", 
+  "ancient temple ruins", "futuristic space colony", "floating island chains"
+];
+
+export const splash_styles = [
+  "vibrant paint splatters", "deep ink drops", "neon energy bursts", 
+  "soft watercolor bleeds", "chaotic digital glitch scatters", 
+  "gold dust spray", "heavy impasto smears", "translucent liquid ripples"
 ];
 
 export const symbolisms = [
@@ -97,6 +110,14 @@ export const app_themes = [
   "A digital sanctuary for light, texture, and transcendental form.",
   "Visualizing the future of abundance, energy, and collective intelligence."
 ];
+
+// App Configuration
+export const AUTO_GENERATE_INTERVAL = 4000; // 4 seconds
+export const STORAGE_KEY = 'lumina_favorites';
+export const INITIAL_BATCH_SIZE = 12;
+export const SCROLL_BATCH_SIZE = 4;
+export const DOWNLOAD_RESOLUTION = 2048;
+export const SHARE_RESOLUTION = 1080;
 
 // Map text descriptions to actual hex codes for the canvas renderer
 export const PALETTES: Record<string, ColorPalette> = {

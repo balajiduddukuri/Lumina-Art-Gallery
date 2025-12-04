@@ -1,10 +1,13 @@
+
 export interface ArtAttributes {
   geo: string;
   starry: string;
   kiss: string;
   colorName: string;
   style: string;
-  movement: string; // New field for Art History Theme
+  movement: string;
+  subject: string;
+  splash: string; // New field for Color Splash
   mood: string;
   texture: string;
   layout: string;
